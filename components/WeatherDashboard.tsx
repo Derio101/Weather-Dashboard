@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { WeatherData, ForecastData, TemperatureUnit, WeatherError } from '@/types/weather'
+import { getBestLocationName } from '@/utils/weatherUtils'
 import SearchBar from './SearchBar'
 import WeatherCard from './WeatherCard'
 import Forecast from './Forecast'
@@ -110,6 +111,18 @@ export default function WeatherDashboard() {
             return
           }
 
+          // First, use reverse geocoding to get more accurate location names
+          const geocodeResponse = await fetch(
+            `https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=5&appid=${API_KEY}`
+          )
+          
+          let bestLocation = null
+          
+          if (geocodeResponse.ok) {
+            const geocodeData = await geocodeResponse.json()
+            bestLocation = getBestLocationName(geocodeData)
+          }
+
           // Fetch weather data using coordinates
           const response = await fetch(
             `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric`
@@ -121,6 +134,12 @@ export default function WeatherDashboard() {
           }
           
           const weatherData = await response.json()
+          
+          // Override the location name if we found a better one from reverse geocoding
+          if (bestLocation) {
+            weatherData.name = bestLocation.name
+            weatherData.sys.country = bestLocation.country
+          }
           
           // Fetch forecast data
           const forecastResponse = await fetch(
