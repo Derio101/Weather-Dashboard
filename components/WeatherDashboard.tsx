@@ -196,7 +196,7 @@ export default function WeatherDashboard() {
 
   // Load default city on mount
   useEffect(() => {
-    fetchWeatherData('London')
+    fetchWeatherData('Harare')
   }, [])
 
   return (
