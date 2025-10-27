@@ -20,6 +20,7 @@ export default function WeatherDashboard() {
   const [error, setError] = useState<WeatherError | null>(null)
   const [unit, setUnit] = useState<TemperatureUnit>('celsius')
   const [isDefaultLocation, setIsDefaultLocation] = useState(true) // Track if showing default location
+  const [autoLocationEnabled, setAutoLocationEnabled] = useState(true) // Allow disabling auto-location
 
   const fetchWeatherData = async (city: string) => {
     if (!API_KEY) {
@@ -120,30 +121,14 @@ export default function WeatherDashboard() {
           
           if (GOOGLE_API_KEY) {
             try {
-              // Use Google Geocoding API v4beta for enhanced location detection
-              const googleGeocodeResponse = await fetch(
-                `https://geocode.googleapis.com/v4beta/geocode/location/${latitude},${longitude}?key=${GOOGLE_API_KEY}`,
-                {
-                  headers: {
-                    'Content-Type': 'application/json',
-                  }
-                }
+              // Use reliable Google v1 API directly instead of experimental v4beta
+              const googleResponse = await fetch(
+                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}`
               )
-              
-              if (googleGeocodeResponse.ok) {
-                const googleData = await googleGeocodeResponse.json()
-                // v4beta returns results directly, not in a 'results' array like v1
-                bestLocation = getBestLocationNameFromGoogle(googleData.results || [googleData])
-              } else {
-                console.warn('Google v4beta geocoding failed, trying v1 API')
-                // Fallback to v1 API
-                const fallbackResponse = await fetch(
-                  `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}`
-                )
-                if (fallbackResponse.ok) {
-                  const fallbackData = await fallbackResponse.json()
-                  bestLocation = getBestLocationNameFromGoogle(fallbackData.results)
-                }
+              if (googleResponse.ok) {
+                const googleData = await googleResponse.json()
+                bestLocation = getBestLocationNameFromGoogle(googleData.results)
+                console.log('Active Google geocoding result:', bestLocation)
               }
             } catch (error) {
               console.warn('Google geocoding failed, falling back to OpenWeatherMap:', error)
@@ -239,8 +224,9 @@ export default function WeatherDashboard() {
     fetchWeatherData('Harare')
     
     // Then silently attempt to get user's location in background
-    // Only proceed if geolocation is supported and we're in a secure context
-    if (navigator.geolocation && 
+    // Only proceed if auto-location is enabled, geolocation is supported and we're in a secure context
+    if (autoLocationEnabled && 
+        navigator.geolocation && 
         (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
       
       // Use a more permissive timeout for background location detection
@@ -255,7 +241,21 @@ export default function WeatherDashboard() {
           // Only update location if user hasn't manually searched for something else
           // This prevents overriding user's intentional search
           if (isDefaultLocation) {
-            const { latitude, longitude } = position.coords
+            const { latitude, longitude, accuracy } = position.coords
+            console.log(`Background geolocation: ${latitude}, ${longitude} (accuracy: ${accuracy}m)`)
+            
+            // Check if coordinates look like ISP routing location (Goromonzi area)
+            const isLikelyISPLocation = (
+              Math.abs(latitude - (-17.85)) < 0.1 && 
+              Math.abs(longitude - 31.38) < 0.1 &&
+              accuracy > 10000  // Low accuracy suggests IP-based location
+            )
+            
+            if (isLikelyISPLocation) {
+              console.warn('Detected likely ISP-based location, skipping background update')
+              setLoading(false)
+              return
+            }
             
             // Validate coordinates
             if (latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180) {
@@ -267,27 +267,14 @@ export default function WeatherDashboard() {
                 
                 if (GOOGLE_API_KEY) {
                   try {
-                    const googleGeocodeResponse = await fetch(
-                      `https://geocode.googleapis.com/v4beta/geocode/location/${latitude},${longitude}?key=${GOOGLE_API_KEY}`,
-                      {
-                        headers: {
-                          'Content-Type': 'application/json',
-                        }
-                      }
+                    // Skip v4beta API for now - use reliable v1 API directly
+                    const googleResponse = await fetch(
+                      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}`
                     )
-                    
-                    if (googleGeocodeResponse.ok) {
-                      const googleData = await googleGeocodeResponse.json()
-                      bestLocation = getBestLocationNameFromGoogle(googleData.results || [googleData])
-                    } else {
-                      // Fallback to v1 API
-                      const fallbackResponse = await fetch(
-                        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}`
-                      )
-                      if (fallbackResponse.ok) {
-                        const fallbackData = await fallbackResponse.json()
-                        bestLocation = getBestLocationNameFromGoogle(fallbackData.results)
-                      }
+                    if (googleResponse.ok) {
+                      const googleData = await googleResponse.json()
+                      bestLocation = getBestLocationNameFromGoogle(googleData.results)
+                      console.log('Background Google geocoding result:', bestLocation)
                     }
                   } catch (error) {
                     console.warn('Google geocoding failed in background:', error)
@@ -303,7 +290,9 @@ export default function WeatherDashboard() {
                     
                     if (geocodeResponse.ok) {
                       const geocodeData = await geocodeResponse.json()
+                      console.log('OpenWeatherMap reverse geocoding data:', geocodeData)
                       bestLocation = getBestLocationName(geocodeData)
+                      console.log('Background OpenWeatherMap result:', bestLocation)
                     }
                   } catch (error) {
                     console.warn('OpenWeatherMap geocoding failed in background:', error)

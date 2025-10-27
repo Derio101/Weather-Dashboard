@@ -53,7 +53,8 @@ export function getBestLocationName(geocodeData: any[]): { name: string, country
   }
 
   // Define common generic city names that should be deprioritized
-  const genericCityNames = ['epworth', 'harare', 'chitungwiza', 'norton', 'ruwa']
+  // Add Goromonzi as it's often returned by ISP geolocation in Zimbabwe
+  const genericCityNames = ['epworth', 'harare', 'chitungwiza', 'norton', 'ruwa', 'goromonzi']
   
   // Priority 1: Look for locations with local_names that contain specific area names
   let bestLocation = geocodeData.find((loc: any) => {
