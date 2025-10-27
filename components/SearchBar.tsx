@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { MapPin } from 'lucide-react'
 
 interface SearchBarProps {
   onSearch: (city: string) => void
@@ -188,25 +189,9 @@ export default function SearchBar({ onSearch, onLocationClick, loading }: Search
           title="Use current location"
         >
           <div className="flex items-center justify-center">
-            <svg 
-              className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" 
-              viewBox="0 0 20 20" 
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <defs>
-                <linearGradient id="locationGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" className="text-blue-500" stopColor="currentColor" />
-                  <stop offset="100%" className="text-blue-600" stopColor="currentColor" />
-                </linearGradient>
-              </defs>
-              <path 
-                fillRule="evenodd" 
-                d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" 
-                clipRule="evenodd"
-                fill="url(#locationGradient)"
-                className="text-blue-500 group-hover:text-blue-600 disabled:text-gray-400"
-              />
-            </svg>
+            <MapPin 
+              className="w-5 h-5 text-white transition-transform duration-300 group-hover:scale-110" 
+            />
           </div>
           {loading && (
             <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-md rounded-lg">
