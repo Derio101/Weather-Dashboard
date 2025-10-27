@@ -29,6 +29,11 @@ export function getWeatherIcon(weatherMain: string): string {
   return iconMap[weatherMain] || '🌤️'
 }
 
+// This function will be used to determine if we should show animated icons
+export function getWeatherCondition(weatherMain: string): string {
+  return weatherMain
+}
+
 export function formatDate(timestamp: number): string {
   const date = new Date(timestamp * 1000)
   return date.toLocaleDateString('en-US', { 

@@ -1,7 +1,8 @@
 'use client'
 
 import { ForecastData, TemperatureUnit } from '@/types/weather'
-import { convertTemperature, getWeatherIcon, formatDate } from '@/utils/weatherUtils'
+import { convertTemperature, formatDate } from '@/utils/weatherUtils'
+import AnimatedWeatherIcon from './AnimatedWeatherIcon'
 
 interface ForecastProps {
   forecast: ForecastData
@@ -28,8 +29,11 @@ export default function Forecast({ forecast, unit }: ForecastProps) {
               {index === 0 ? 'Today' : formatDate(day.dt)}
             </p>
             
-            <div className="text-3xl mb-2">
-              {getWeatherIcon(day.weather[0].main)}
+            <div className="text-3xl mb-2 flex justify-center">
+              <AnimatedWeatherIcon 
+                weatherMain={day.weather[0].main}
+                className="w-8 h-8 text-white"
+              />
             </div>
             
             <p className="text-xl font-bold text-white mb-1">

@@ -22,6 +22,57 @@
   }
 }
 
+/* Weather animation keyframes */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes flash {
+  0%, 50%, 100% {
+    opacity: 1;
+    color: #fbbf24;
+  }
+  25%, 75% {
+    opacity: 0.3;
+    color: #f59e0b;
+  }
+}
+
+@keyframes sway {
+  0%, 100% {
+    transform: translateX(0px);
+  }
+  33% {
+    transform: translateX(-3px);
+  }
+  66% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes wiggle {
+  0%, 100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes snow {
+  0% {
+    transform: translateY(0px);
+  }
+  100% {
+    transform: translateY(20px);
+  }
+}
+
 body {
   background: url('/background.jpeg') center center/cover no-repeat;
   background-attachment: fixed;

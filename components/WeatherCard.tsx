@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { WeatherData, TemperatureUnit } from '@/types/weather'
-import { convertTemperature, getWeatherIcon } from '@/utils/weatherUtils'
+import { convertTemperature } from '@/utils/weatherUtils'
 import { addToFavorites, removeFromFavorites, isCityFavorited, getFavorites } from '@/utils/favoritesUtils'
+import AnimatedWeatherIcon from './AnimatedWeatherIcon'
 
 interface WeatherCardProps {
   weather: WeatherData
@@ -59,11 +60,7 @@ export default function WeatherCard({ weather, unit, onUnitToggle }: WeatherCard
         <div className="flex items-center gap-3">
           <button
             onClick={handleFavoriteToggle}
-            className={`p-2 rounded-lg transition-all duration-200 ${
-              isFavorited 
-                ? 'bg-red-500 hover:bg-red-600 text-white' 
-                : 'bg-white/20 hover:bg-white/30 text-white'
-            }`}
+            className="p-2 rounded-lg transition-all duration-200 hover:scale-110 text-white"
             title={isFavorited ? 'Remove from favourites' : 'Add to favourites'}
           >
             {isFavorited ? '❤️' : '🤍'}
@@ -80,8 +77,11 @@ export default function WeatherCard({ weather, unit, onUnitToggle }: WeatherCard
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="text-center">
-          <div className="text-6xl mb-2">
-            {getWeatherIcon(weather.weather[0].main)}
+          <div className="text-6xl mb-2 flex justify-center">
+            <AnimatedWeatherIcon 
+              weatherMain={weather.weather[0].main}
+              className="w-16 h-16 text-white"
+            />
           </div>
           <div className="text-6xl font-bold text-white mb-2">
             {Math.round(temp)}{unitSymbol}

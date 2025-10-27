@@ -45,13 +45,14 @@ export default function FavoritesTiles({ onCitySelect, currentCityName }: Favori
           Favourites ({favorites.length})
         </div>
         {favorites.map(city => (
-          <FavoriteWeatherTile
-            key={city.id}
-            city={city}
-            onCityClick={onCitySelect}
-            onRemoveFavorite={handleRemoveFavorite}
-            isActive={currentCityName?.toLowerCase() === city.name.toLowerCase()}
-          />
+          <div key={city.id} className="w-40 h-40">
+            <FavoriteWeatherTile
+              city={city}
+              onCityClick={onCitySelect}
+              onRemoveFavorite={handleRemoveFavorite}
+              isActive={currentCityName?.toLowerCase() === city.name.toLowerCase()}
+            />
+          </div>
         ))}
       </div>
       
@@ -62,7 +63,7 @@ export default function FavoritesTiles({ onCitySelect, currentCityName }: Favori
         </div>
         <div className="flex gap-3 overflow-x-auto pb-2">
           {favorites.map(city => (
-            <div key={city.id} className="flex-shrink-0 w-24">
+            <div key={city.id} className="flex-shrink-0 w-40 h-40">
               <FavoriteWeatherTile
                 city={city}
                 onCityClick={onCitySelect}

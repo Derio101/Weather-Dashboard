@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { FavoriteCity } from '@/types/weather'
-import { getWeatherIcon } from '@/utils/weatherUtils'
+import AnimatedWeatherIcon from './AnimatedWeatherIcon'
 
 interface FavoriteWeatherTileProps {
   city: FavoriteCity
@@ -15,11 +15,17 @@ interface WeatherData {
   main: {
     temp: number
     humidity: number
+    feels_like: number
+    pressure: number
   }
   weather: Array<{
     main: string
     description: string
   }>
+  wind: {
+    speed: number
+  }
+  visibility?: number
 }
 
 const API_KEY = process.env.NEXT_PUBLIC_WEATHER_API_KEY
@@ -76,7 +82,7 @@ export default function FavoriteWeatherTile({
         isActive 
           ? 'bg-white/20 border-white/40' 
           : 'bg-white/10 hover:bg-white/15 border-white/20'
-      } backdrop-blur-md rounded-2xl p-3 border w-full min-w-[80px]`}
+      } backdrop-blur-md rounded-2xl p-4 border w-full h-full aspect-square min-w-[160px] min-h-[160px]`}
       onClick={handleCityClick}
       style={{
         borderRadius: '16px', // squircle-like appearance
@@ -112,8 +118,11 @@ export default function FavoriteWeatherTile({
         
         {weatherData && !loading && !error && (
           <div>
-            <div className="text-2xl lg:text-3xl mb-1">
-              {getWeatherIcon(weatherData.weather[0].main)}
+            <div className="text-2xl lg:text-3xl mb-1 flex justify-center">
+              <AnimatedWeatherIcon 
+                weatherMain={weatherData.weather[0].main}
+                className="w-6 h-6 lg:w-8 lg:h-8 text-white"
+              />
             </div>
             <div className="text-sm lg:text-xl font-bold text-white mb-1">
               {Math.round(weatherData.main.temp)}°C

@@ -175,7 +175,7 @@ export default function SearchBar({ onSearch, onLocationClick, loading }: Search
         <button
           type="submit"
           disabled={loading || !city.trim()}
-          className="px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-lg transition-colors duration-200 font-medium"
+          className="px-6 py-3 bg-white/20 backdrop-blur-md hover:bg-white/30 disabled:bg-white/10 text-white rounded-lg transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none disabled:hover:scale-100 border border-white/30"
         >
           {loading ? 'Searching...' : 'Search'}
         </button>
@@ -184,10 +184,35 @@ export default function SearchBar({ onSearch, onLocationClick, loading }: Search
           type="button"
           onClick={onLocationClick}
           disabled={loading}
-          className="px-4 py-3 bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white rounded-lg transition-colors duration-200 font-medium"
+          className="relative group px-4 py-3 bg-white/20 backdrop-blur-md hover:bg-white/30 disabled:bg-white/10 rounded-lg transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none disabled:hover:scale-100 border border-white/30"
           title="Use current location"
         >
-          📍
+          <div className="flex items-center justify-center">
+            <svg 
+              className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" 
+              viewBox="0 0 20 20" 
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <defs>
+                <linearGradient id="locationGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" className="text-blue-500" stopColor="currentColor" />
+                  <stop offset="100%" className="text-blue-600" stopColor="currentColor" />
+                </linearGradient>
+              </defs>
+              <path 
+                fillRule="evenodd" 
+                d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" 
+                clipRule="evenodd"
+                fill="url(#locationGradient)"
+                className="text-blue-500 group-hover:text-blue-600 disabled:text-gray-400"
+              />
+            </svg>
+          </div>
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-md rounded-lg">
+              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
         </button>
       </form>
     </div>
