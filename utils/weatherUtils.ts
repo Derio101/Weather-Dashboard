@@ -107,3 +107,99 @@ export function getBestLocationName(geocodeData: any[]): { name: string, country
     country: bestLocation.country
   }
 }
+
+/**
+ * Determines the best location name from Google Geocoding API v4beta results
+ * Prioritizes specific suburbs, neighborhoods, and local areas over cities
+ */
+export function getBestLocationNameFromGoogle(results: any[]): { name: string, country: string } | null {
+  if (!results || results.length === 0) {
+    return null
+  }
+
+  // Find the most specific location by looking at address components
+  let bestResult = null
+  let bestSpecificity = 0
+
+  for (const result of results) {
+    // v4beta API uses addressComponents instead of address_components
+    const components = result.addressComponents || result.address_components || []
+    let specificity = 0
+    let locationName = ''
+    let country = ''
+
+    // Look for specific location types in order of preference (v4beta compatible)
+    const typePreferences = [
+      'sublocality_level_1',     // Most specific neighborhoods/suburbs like "Damofalls Park"
+      'sublocality_level_2',     // Secondary sublocality
+      'sublocality_level_3',     // Tertiary sublocality
+      'sublocality',             // General sublocality
+      'neighborhood',            // Named neighborhoods
+      'colloquial_area',         // Commonly-used alternative names
+      'locality',                // Cities/towns
+      'administrative_area_level_2', // Counties/districts
+      'administrative_area_level_1'  // States/provinces
+    ]
+
+    for (const component of components) {
+      const types = component.types || []
+      
+      // Find country - v4beta uses longText/shortText
+      if (types.includes('country')) {
+        country = component.shortText || component.short_name || 'Unknown'
+      }
+
+      // Find the most specific location name
+      for (let i = 0; i < typePreferences.length; i++) {
+        if (types.includes(typePreferences[i])) {
+          const currentSpecificity = typePreferences.length - i
+          if (currentSpecificity > specificity) {
+            specificity = currentSpecificity
+            // v4beta uses longText instead of long_name
+            locationName = component.longText || component.long_name || component.shortText || component.short_name
+          }
+          break
+        }
+      }
+    }
+
+    // Also check formattedAddress for specific area names (v4beta compatible)
+    const addressToCheck = result.formattedAddress || result.formatted_address
+    if (addressToCheck) {
+      const formattedAddress = addressToCheck.toLowerCase()
+      const specificAreaIndicators = ['park', 'estate', 'suburb', 'gardens', 'hills', 'damofalls', 'grove', 'heights', 'ridge', 'meadows']
+      
+      if (specificAreaIndicators.some(indicator => formattedAddress.includes(indicator))) {
+        specificity += 15 // Higher boost for addresses with specific area keywords
+      }
+    }
+
+    // Boost specificity for results with higher granularity (v4beta feature)
+    if (result.granularity) {
+      switch (result.granularity) {
+        case 'ROOFTOP':
+          specificity += 5
+          break
+        case 'RANGE_INTERPOLATED':
+          specificity += 3
+          break
+        case 'GEOMETRIC_CENTER':
+          specificity += 2
+          break
+        case 'APPROXIMATE':
+          specificity += 1
+          break
+      }
+    }
+
+    if (specificity > bestSpecificity && locationName && country) {
+      bestSpecificity = specificity
+      bestResult = {
+        name: locationName,
+        country: country
+      }
+    }
+  }
+
+  return bestResult
+}

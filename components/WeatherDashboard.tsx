@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { WeatherData, ForecastData, TemperatureUnit, WeatherError } from '@/types/weather'
-import { getBestLocationName } from '@/utils/weatherUtils'
+import { getBestLocationName, getBestLocationNameFromGoogle } from '@/utils/weatherUtils'
 import SearchBar from './SearchBar'
 import WeatherCard from './WeatherCard'
 import Forecast from './Forecast'
@@ -11,6 +11,7 @@ import ErrorMessage from './ErrorMessage'
 import FavoritesTiles from './FavoritesTiles'
 
 const API_KEY = process.env.NEXT_PUBLIC_WEATHER_API_KEY
+const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY
 
 export default function WeatherDashboard() {
   const [weather, setWeather] = useState<WeatherData | null>(null)
@@ -111,16 +112,51 @@ export default function WeatherDashboard() {
             return
           }
 
-          // First, use reverse geocoding to get more accurate location names
-          const geocodeResponse = await fetch(
-            `https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=5&appid=${API_KEY}`
-          )
-          
+          // First, use Google's v4beta reverse geocoding for more accurate location names
           let bestLocation = null
           
-          if (geocodeResponse.ok) {
-            const geocodeData = await geocodeResponse.json()
-            bestLocation = getBestLocationName(geocodeData)
+          if (GOOGLE_API_KEY) {
+            try {
+              // Use Google Geocoding API v4beta for enhanced location detection
+              const googleGeocodeResponse = await fetch(
+                `https://geocode.googleapis.com/v4beta/geocode/location/${latitude},${longitude}?key=${GOOGLE_API_KEY}`,
+                {
+                  headers: {
+                    'Content-Type': 'application/json',
+                  }
+                }
+              )
+              
+              if (googleGeocodeResponse.ok) {
+                const googleData = await googleGeocodeResponse.json()
+                // v4beta returns results directly, not in a 'results' array like v1
+                bestLocation = getBestLocationNameFromGoogle(googleData.results || [googleData])
+              } else {
+                console.warn('Google v4beta geocoding failed, trying v1 API')
+                // Fallback to v1 API
+                const fallbackResponse = await fetch(
+                  `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}`
+                )
+                if (fallbackResponse.ok) {
+                  const fallbackData = await fallbackResponse.json()
+                  bestLocation = getBestLocationNameFromGoogle(fallbackData.results)
+                }
+              }
+            } catch (error) {
+              console.warn('Google geocoding failed, falling back to OpenWeatherMap:', error)
+            }
+          }
+          
+          // Fallback to OpenWeatherMap reverse geocoding if Google fails
+          if (!bestLocation) {
+            const geocodeResponse = await fetch(
+              `https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=5&appid=${API_KEY}`
+            )
+            
+            if (geocodeResponse.ok) {
+              const geocodeData = await geocodeResponse.json()
+              bestLocation = getBestLocationName(geocodeData)
+            }
           }
 
           // Fetch weather data using coordinates
