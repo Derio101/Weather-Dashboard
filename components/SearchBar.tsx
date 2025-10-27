@@ -144,7 +144,8 @@ export default function SearchBar({ onSearch, onLocationClick, loading }: Search
           {showSuggestions && suggestions.length > 0 && (
             <div 
               ref={suggestionsRef}
-              className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-md rounded-lg border border-white/30 shadow-lg z-50 max-h-60 overflow-y-auto"
+              className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-md rounded-lg border border-white/30 shadow-xl z-[9999] max-h-60 overflow-y-auto"
+              style={{ zIndex: 9999 }}
             >
               {isLoadingSuggestions && (
                 <div className="px-4 py-3 text-gray-600 text-center">
