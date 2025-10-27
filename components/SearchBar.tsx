@@ -125,9 +125,9 @@ export default function SearchBar({ onSearch, onLocationClick, loading }: Search
   }
 
   return (
-    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 relative">
+    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 relative z-50">
       <form onSubmit={handleSubmit} className="flex gap-4 items-center">
-        <div className="flex-1 relative">
+        <div className="flex-1 relative z-50">
           <input
             ref={inputRef}
             type="text"
