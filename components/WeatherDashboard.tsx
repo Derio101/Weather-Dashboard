@@ -19,6 +19,7 @@ export default function WeatherDashboard() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<WeatherError | null>(null)
   const [unit, setUnit] = useState<TemperatureUnit>('celsius')
+  const [isDefaultLocation, setIsDefaultLocation] = useState(true) // Track if showing default location
 
   const fetchWeatherData = async (city: string) => {
     if (!API_KEY) {
@@ -28,6 +29,7 @@ export default function WeatherDashboard() {
 
     setLoading(true)
     setError(null)
+    setIsDefaultLocation(city === 'Harare') // Track if this is the default location
 
     try {
       const weatherResponse = await fetch(
@@ -71,6 +73,7 @@ export default function WeatherDashboard() {
 
     setLoading(true)
     setError(null)
+    setIsDefaultLocation(false) // User is actively requesting their location
 
     // More permissive options for better compatibility
     const options = {
@@ -230,9 +233,129 @@ export default function WeatherDashboard() {
       })
   }
 
-  // Load default city on mount
+  // Load default city on mount and attempt to get user's location
   useEffect(() => {
+    // Always load default city first for immediate content
     fetchWeatherData('Harare')
+    
+    // Then silently attempt to get user's location in background
+    // Only proceed if geolocation is supported and we're in a secure context
+    if (navigator.geolocation && 
+        (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
+      
+      // Use a more permissive timeout for background location detection
+      const backgroundOptions = {
+        enableHighAccuracy: false,
+        timeout: 10000, // 10 seconds
+        maximumAge: 300000 // 5 minutes cache
+      }
+      
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          // Only update location if user hasn't manually searched for something else
+          // This prevents overriding user's intentional search
+          if (isDefaultLocation) {
+            const { latitude, longitude } = position.coords
+            
+            // Validate coordinates
+            if (latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180) {
+              try {
+                setLoading(true)
+                
+                // Use the same location detection logic as getCurrentLocation()
+                let bestLocation = null
+                
+                if (GOOGLE_API_KEY) {
+                  try {
+                    const googleGeocodeResponse = await fetch(
+                      `https://geocode.googleapis.com/v4beta/geocode/location/${latitude},${longitude}?key=${GOOGLE_API_KEY}`,
+                      {
+                        headers: {
+                          'Content-Type': 'application/json',
+                        }
+                      }
+                    )
+                    
+                    if (googleGeocodeResponse.ok) {
+                      const googleData = await googleGeocodeResponse.json()
+                      bestLocation = getBestLocationNameFromGoogle(googleData.results || [googleData])
+                    } else {
+                      // Fallback to v1 API
+                      const fallbackResponse = await fetch(
+                        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}`
+                      )
+                      if (fallbackResponse.ok) {
+                        const fallbackData = await fallbackResponse.json()
+                        bestLocation = getBestLocationNameFromGoogle(fallbackData.results)
+                      }
+                    }
+                  } catch (error) {
+                    console.warn('Google geocoding failed in background:', error)
+                  }
+                }
+                
+                // Fallback to OpenWeatherMap if Google fails
+                if (!bestLocation && API_KEY) {
+                  try {
+                    const geocodeResponse = await fetch(
+                      `https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=5&appid=${API_KEY}`
+                    )
+                    
+                    if (geocodeResponse.ok) {
+                      const geocodeData = await geocodeResponse.json()
+                      bestLocation = getBestLocationName(geocodeData)
+                    }
+                  } catch (error) {
+                    console.warn('OpenWeatherMap geocoding failed in background:', error)
+                  }
+                }
+
+                // Fetch weather data for user's location
+                if (API_KEY) {
+                  const response = await fetch(
+                    `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric`
+                  )
+                  
+                  if (response.ok) {
+                    const weatherData = await response.json()
+                    
+                    // Override location name if we found a better one
+                    if (bestLocation) {
+                      weatherData.name = bestLocation.name
+                      weatherData.sys.country = bestLocation.country
+                    }
+                    
+                    // Fetch forecast data
+                    const forecastResponse = await fetch(
+                      `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric`
+                    )
+                    
+                    const forecastData = forecastResponse.ok ? await forecastResponse.json() : null
+                    
+                    setWeather(weatherData)
+                    if (forecastData) {
+                      setForecast(forecastData)
+                    }
+                    setIsDefaultLocation(false) // Now showing user's actual location
+                  }
+                }
+                
+                setLoading(false)
+              } catch (error) {
+                console.warn('Background location weather fetch failed:', error)
+                setLoading(false)
+                // Don't show error to user for background location attempts
+              }
+            }
+          }
+        },
+        (error) => {
+          // Silently fail for background location attempts
+          console.log('Background location detection failed (this is normal):', error.message)
+        },
+        backgroundOptions
+      )
+    }
   }, [])
 
   return (
