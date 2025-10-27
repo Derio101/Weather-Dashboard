@@ -42,3 +42,11 @@ export interface WeatherError {
   message: string
   code?: string
 }
+
+export interface FavoriteCity {
+  id: string
+  name: string
+  country: string
+  state?: string
+  addedAt: Date
+}

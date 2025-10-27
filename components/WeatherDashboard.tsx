@@ -7,6 +7,7 @@ import WeatherCard from './WeatherCard'
 import Forecast from './Forecast'
 import LoadingSpinner from './LoadingSpinner'
 import ErrorMessage from './ErrorMessage'
+import FavoritesTiles from './FavoritesTiles'
 
 const API_KEY = process.env.NEXT_PUBLIC_WEATHER_API_KEY
 
@@ -87,32 +88,40 @@ export default function WeatherDashboard() {
   }, [])
 
   return (
-    <div className="space-y-6">
-      <SearchBar 
-        onSearch={fetchWeatherData}
-        onLocationClick={getCurrentLocation}
-        loading={loading}
+    <div className="relative">
+      {/* Favorites tiles positioned on the left side */}
+      <FavoritesTiles 
+        onCitySelect={fetchWeatherData} 
+        currentCityName={weather?.name}
       />
       
-      {loading && <LoadingSpinner />}
-      
-      {error && <ErrorMessage error={error} />}
-      
-      {weather && !loading && (
-        <div className="animate-slide-up">
-          <WeatherCard 
-            weather={weather} 
-            unit={unit}
-            onUnitToggle={() => setUnit(unit === 'celsius' ? 'fahrenheit' : 'celsius')}
-          />
-        </div>
-      )}
-      
-      {forecast && !loading && (
-        <div className="animate-slide-up">
-          <Forecast forecast={forecast} unit={unit} />
-        </div>
-      )}
+      <div className="space-y-6">
+        <SearchBar 
+          onSearch={fetchWeatherData}
+          onLocationClick={getCurrentLocation}
+          loading={loading}
+        />
+        
+        {loading && <LoadingSpinner />}
+        
+        {error && <ErrorMessage error={error} />}
+        
+        {weather && !loading && (
+          <div className="animate-slide-up">
+            <WeatherCard 
+              weather={weather} 
+              unit={unit}
+              onUnitToggle={() => setUnit(unit === 'celsius' ? 'fahrenheit' : 'celsius')}
+            />
+          </div>
+        )}
+        
+        {forecast && !loading && (
+          <div className="animate-slide-up">
+            <Forecast forecast={forecast} unit={unit} />
+          </div>
+        )}
+      </div>
     </div>
   )
 }

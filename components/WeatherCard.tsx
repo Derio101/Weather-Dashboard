@@ -1,7 +1,9 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { WeatherData, TemperatureUnit } from '@/types/weather'
 import { convertTemperature, getWeatherIcon } from '@/utils/weatherUtils'
+import { addToFavorites, removeFromFavorites, isCityFavorited, getFavorites } from '@/utils/favoritesUtils'
 
 interface WeatherCardProps {
   weather: WeatherData
@@ -10,9 +12,37 @@ interface WeatherCardProps {
 }
 
 export default function WeatherCard({ weather, unit, onUnitToggle }: WeatherCardProps) {
+  const [isFavorited, setIsFavorited] = useState(false)
+
   const temp = convertTemperature(weather.main.temp, unit)
   const feelsLike = convertTemperature(weather.main.feels_like, unit)
   const unitSymbol = unit === 'celsius' ? '°C' : '°F'
+
+  useEffect(() => {
+    setIsFavorited(isCityFavorited(weather.name, weather.sys.country))
+  }, [weather.name, weather.sys.country])
+
+  const handleFavoriteToggle = () => {
+    if (isFavorited) {
+      const favorites = getFavorites()
+      const favoriteToRemove = favorites.find(fav => 
+        fav.name.toLowerCase() === weather.name.toLowerCase() && 
+        fav.country === weather.sys.country
+      )
+      if (favoriteToRemove) {
+        removeFromFavorites(favoriteToRemove.id)
+      }
+    } else {
+      addToFavorites({
+        name: weather.name,
+        country: weather.sys.country
+      })
+    }
+    setIsFavorited(!isFavorited)
+    
+    // Dispatch custom event to update favorites section
+    window.dispatchEvent(new CustomEvent('favorites-updated'))
+  }
 
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
@@ -26,12 +56,26 @@ export default function WeatherCard({ weather, unit, onUnitToggle }: WeatherCard
           </p>
         </div>
         
-        <button
-          onClick={onUnitToggle}
-          className="px-3 py-1 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors duration-200 text-sm"
-        >
-          Switch to {unit === 'celsius' ? '°F' : '°C'}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleFavoriteToggle}
+            className={`p-2 rounded-lg transition-all duration-200 ${
+              isFavorited 
+                ? 'bg-red-500 hover:bg-red-600 text-white' 
+                : 'bg-white/20 hover:bg-white/30 text-white'
+            }`}
+            title={isFavorited ? 'Remove from favourites' : 'Add to favourites'}
+          >
+            {isFavorited ? '❤️' : '🤍'}
+          </button>
+          
+          <button
+            onClick={onUnitToggle}
+            className="px-3 py-1 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors duration-200 text-sm"
+          >
+            Switch to {unit === 'celsius' ? '°F' : '°C'}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
